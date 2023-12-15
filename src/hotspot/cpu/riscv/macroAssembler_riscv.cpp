@@ -1262,9 +1262,10 @@ int MacroAssembler::push_v(unsigned int bitset, Register stack) {
   unsigned char regs[32];
   int count = bitset_to_regs(bitset, regs);
 
+  vsetvli(t0, x0, Assembler::e8, Assembler::m1);
   for (int i = 0; i < count; i++) {
     sub(stack, stack, vector_size_in_bytes);
-    vs1r_v(as_VectorRegister(regs[i]), stack);
+    vse8_v(as_VectorRegister(regs[i]), stack);
   }
 
   return count * vector_size_in_bytes / wordSize;
@@ -1276,9 +1277,10 @@ int MacroAssembler::pop_v(unsigned int bitset, Register stack) {
   // Scan bitset to accumulate register pairs
   unsigned char regs[32];
   int count = bitset_to_regs(bitset, regs);
+  vsetvli(t0, x0, Assembler::e8, Assembler::m1);
 
   for (int i = count - 1; i >= 0; i--) {
-    vl1r_v(as_VectorRegister(regs[i]), stack);
+    vle8_v(as_VectorRegister(regs[i]), stack);
     add(stack, stack, vector_size_in_bytes);
   }
 

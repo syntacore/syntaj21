@@ -1273,9 +1273,10 @@ public:
   }
 
   // vector pseudo instructions
-  inline void vl1r_v(VectorRegister vd, Register rs) {
-    vl1re8_v(vd, rs);
-  }
+// not present in rvv 0.7.1
+//  inline void vl1r_v(VectorRegister vd, Register rs) {
+//    vl1re8_v(vd, rs);
+//  }
 
   inline void vmnot_m(VectorRegister vd, VectorRegister vs) {
     vmnand_mm(vd, vs, vs);

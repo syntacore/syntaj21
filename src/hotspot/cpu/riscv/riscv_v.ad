@@ -1884,7 +1884,7 @@ instruct vasrB_masked(vReg dst_src, vReg shift, vRegMask vmask, vRegMask_V0 v0) 
     // if shift > BitsPerByte - 1, clear the low BitsPerByte - 1 bits
     __ vmerge_vim(as_VectorRegister($shift$$reg), as_VectorRegister($shift$$reg), BitsPerByte - 1);
     // otherwise, shift
-    __ vmv1r_v(as_VectorRegister($v0$$reg), as_VectorRegister($vmask$$reg));
+    __ vmv_v_v(as_VectorRegister($v0$$reg), as_VectorRegister($vmask$$reg));
     __ vsra_vv(as_VectorRegister($dst_src$$reg), as_VectorRegister($dst_src$$reg),
                as_VectorRegister($shift$$reg), Assembler::v0_t);
   %}
@@ -1902,7 +1902,7 @@ instruct vasrS_masked(vReg dst_src, vReg shift, vRegMask vmask, vRegMask_V0 v0) 
     // if shift > BitsPerShort - 1, clear the low BitsPerShort - 1 bits
     __ vmerge_vim(as_VectorRegister($shift$$reg), as_VectorRegister($shift$$reg), BitsPerShort - 1);
     // otherwise, shift
-    __ vmv1r_v(as_VectorRegister($v0$$reg), as_VectorRegister($vmask$$reg));
+    __ vmv_v_v(as_VectorRegister($v0$$reg), as_VectorRegister($vmask$$reg));
     __ vsra_vv(as_VectorRegister($dst_src$$reg), as_VectorRegister($dst_src$$reg),
                as_VectorRegister($shift$$reg), Assembler::v0_t);
   %}
@@ -2011,7 +2011,7 @@ instruct vlslB_masked(vReg dst_src, vReg shift, vRegMask vmask, vRegMask_V0 v0) 
     __ vxor_vv(as_VectorRegister($dst_src$$reg), as_VectorRegister($dst_src$$reg),
                as_VectorRegister($dst_src$$reg), Assembler::v0_t);
     // otherwise, shift
-    __ vmv1r_v(as_VectorRegister($v0$$reg), as_VectorRegister($vmask$$reg));
+    __ vmv_v_v(as_VectorRegister($v0$$reg), as_VectorRegister($vmask$$reg));
     __ vsll_vv(as_VectorRegister($dst_src$$reg), as_VectorRegister($dst_src$$reg),
                as_VectorRegister($shift$$reg), Assembler::v0_t);
   %}
@@ -2032,7 +2032,7 @@ instruct vlslS_masked(vReg dst_src, vReg shift, vRegMask vmask, vRegMask_V0 v0) 
     __ vxor_vv(as_VectorRegister($dst_src$$reg), as_VectorRegister($dst_src$$reg),
                as_VectorRegister($dst_src$$reg), Assembler::v0_t);
     // otherwise, shift
-    __ vmv1r_v(as_VectorRegister($v0$$reg), as_VectorRegister($vmask$$reg));
+    __ vmv_v_v(as_VectorRegister($v0$$reg), as_VectorRegister($vmask$$reg));
     __ vsll_vv(as_VectorRegister($dst_src$$reg), as_VectorRegister($dst_src$$reg),
                as_VectorRegister($shift$$reg), Assembler::v0_t);
   %}
@@ -2141,7 +2141,7 @@ instruct vlsrB_masked(vReg dst_src, vReg shift, vRegMask vmask, vRegMask_V0 v0) 
     __ vxor_vv(as_VectorRegister($dst_src$$reg), as_VectorRegister($dst_src$$reg),
                as_VectorRegister($dst_src$$reg), Assembler::v0_t);
     // otherwise, shift
-    __ vmv1r_v(as_VectorRegister($v0$$reg), as_VectorRegister($vmask$$reg));
+    __ vmv_v_v(as_VectorRegister($v0$$reg), as_VectorRegister($vmask$$reg));
     __ vsrl_vv(as_VectorRegister($dst_src$$reg), as_VectorRegister($dst_src$$reg),
                as_VectorRegister($shift$$reg), Assembler::v0_t);
   %}
@@ -2162,7 +2162,7 @@ instruct vlsrS_masked(vReg dst_src, vReg shift, vRegMask vmask, vRegMask_V0 v0) 
     __ vxor_vv(as_VectorRegister($dst_src$$reg), as_VectorRegister($dst_src$$reg),
                as_VectorRegister($dst_src$$reg), Assembler::v0_t);
     // otherwise, shift
-    __ vmv1r_v(as_VectorRegister($v0$$reg), as_VectorRegister($vmask$$reg));
+    __ vmv_v_v(as_VectorRegister($v0$$reg), as_VectorRegister($vmask$$reg));
     __ vsrl_vv(as_VectorRegister($dst_src$$reg), as_VectorRegister($dst_src$$reg),
                as_VectorRegister($shift$$reg), Assembler::v0_t);
   %}
@@ -2656,11 +2656,11 @@ instruct vsqrt_fp_masked(vReg dst_src, vRegMask_V0 v0) %{
 
 instruct vstring_equalsL(iRegP_R11 str1, iRegP_R13 str2, iRegI_R14 cnt,
                          iRegI_R10 result, vReg_V2 v2,
-                         vReg_V3 v3, vReg_V4 v4, vReg_V5 v5, rFlagsReg cr)
+                         vReg_V3 v3, vReg_V4 v4, vReg_V5 v5, vReg_V6 v6, vReg_V7 v7, rFlagsReg cr)
 %{
   predicate(UseRVV && ((StrEqualsNode*)n)->encoding() == StrIntrinsicNode::LL);
   match(Set result (StrEquals (Binary str1 str2) cnt));
-  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt, TEMP v2, TEMP v3, TEMP v4, TEMP v5, KILL cr);
+  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt, TEMP v2, TEMP v3, TEMP v4, TEMP v5, TEMP v6, TEMP v7, KILL cr);
 
   format %{ "String Equals $str1, $str2, $cnt -> $result\t#@string_equalsL" %}
   ins_encode %{
@@ -2673,11 +2673,11 @@ instruct vstring_equalsL(iRegP_R11 str1, iRegP_R13 str2, iRegI_R14 cnt,
 
 instruct vstring_equalsU(iRegP_R11 str1, iRegP_R13 str2, iRegI_R14 cnt,
                          iRegI_R10 result, vReg_V2 v2,
-                         vReg_V3 v3, vReg_V4 v4, vReg_V5 v5, rFlagsReg cr)
+                         vReg_V3 v3, vReg_V4 v4, vReg_V5 v5, vReg_V6 v6, vReg_V7 v7, rFlagsReg cr)
 %{
   predicate(UseRVV && ((StrEqualsNode*)n)->encoding() == StrIntrinsicNode::UU);
   match(Set result (StrEquals (Binary str1 str2) cnt));
-  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt, TEMP v2, TEMP v3, TEMP v4, TEMP v5, KILL cr);
+  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt, TEMP v2, TEMP v3, TEMP v4, TEMP v5, TEMP v6, TEMP v7, KILL cr);
 
   format %{ "String Equals $str1, $str2, $cnt -> $result\t#@string_equalsU" %}
   ins_encode %{
@@ -2689,11 +2689,11 @@ instruct vstring_equalsU(iRegP_R11 str1, iRegP_R13 str2, iRegI_R14 cnt,
 %}
 
 instruct varray_equalsB(iRegP_R11 ary1, iRegP_R12 ary2, iRegI_R10 result,
-                        vReg_V2 v2, vReg_V3 v3, vReg_V4 v4, vReg_V5 v5, iRegP_R28 tmp, rFlagsReg cr)
+                        vReg_V2 v2, vReg_V3 v3, vReg_V4 v4, vReg_V5 v5, vReg_V6 v6, vReg_V7 v7, iRegP_R28 tmp, rFlagsReg cr)
 %{
   predicate(UseRVV && ((AryEqNode*)n)->encoding() == StrIntrinsicNode::LL);
   match(Set result (AryEq ary1 ary2));
-  effect(KILL tmp, USE_KILL ary1, USE_KILL ary2, TEMP v2, TEMP v3, TEMP v4, TEMP v5, KILL cr);
+  effect(KILL tmp, USE_KILL ary1, USE_KILL ary2, TEMP v2, TEMP v3, TEMP v4, TEMP v5, TEMP v6, TEMP v7, KILL cr);
 
   format %{ "Array Equals $ary1, ary2 -> $result\t#@array_equalsB // KILL $tmp" %}
   ins_encode %{
@@ -2704,11 +2704,11 @@ instruct varray_equalsB(iRegP_R11 ary1, iRegP_R12 ary2, iRegI_R10 result,
 %}
 
 instruct varray_equalsC(iRegP_R11 ary1, iRegP_R12 ary2, iRegI_R10 result,
-                        vReg_V2 v2, vReg_V3 v3, vReg_V4 v4, vReg_V5 v5, iRegP_R28 tmp, rFlagsReg cr)
+                        vReg_V2 v2, vReg_V3 v3, vReg_V4 v4, vReg_V5 v5, vReg_V6 v6, vReg_V7 v7, iRegP_R28 tmp, rFlagsReg cr)
 %{
   predicate(UseRVV && ((AryEqNode*)n)->encoding() == StrIntrinsicNode::UU);
   match(Set result (AryEq ary1 ary2));
-  effect(KILL tmp, USE_KILL ary1, USE_KILL ary2, TEMP v2, TEMP v3, TEMP v4, TEMP v5, KILL cr);
+  effect(KILL tmp, USE_KILL ary1, USE_KILL ary2, TEMP v2, TEMP v3, TEMP v4, TEMP v5, TEMP v6, TEMP v7, KILL cr);
 
   format %{ "Array Equals $ary1, ary2 -> $result\t#@array_equalsC // KILL $tmp" %}
   ins_encode %{
@@ -2720,12 +2720,13 @@ instruct varray_equalsC(iRegP_R11 ary1, iRegP_R12 ary2, iRegI_R10 result,
 
 instruct vstring_compareU(iRegP_R11 str1, iRegI_R12 cnt1, iRegP_R13 str2, iRegI_R14 cnt2,
                           iRegI_R10 result, vReg_V2 v2, vReg_V3 v3, vReg_V4 v4, vReg_V5 v5,
+                          vReg_V6 v6, vReg_V7 v7, vReg_V12 v12, vReg_V13 v13, vReg_V14 v14, vReg_V15 v15,
                           iRegP_R28 tmp1, iRegL_R29 tmp2)
 %{
   predicate(UseRVV && ((StrCompNode *)n)->encoding() == StrIntrinsicNode::UU);
   match(Set result (StrComp (Binary str1 cnt1) (Binary str2 cnt2)));
   effect(KILL tmp1, KILL tmp2, USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2,
-         TEMP v2, TEMP v3, TEMP v4, TEMP v5);
+         TEMP v2, TEMP v3, TEMP v4, TEMP v5, TEMP v6, TEMP v7, TEMP v12, TEMP v13, TEMP v14, TEMP v15);
 
   format %{ "String Compare $str1, $cnt1, $str2, $cnt2 -> $result\t#@string_compareU" %}
   ins_encode %{
@@ -2739,12 +2740,13 @@ instruct vstring_compareU(iRegP_R11 str1, iRegI_R12 cnt1, iRegP_R13 str2, iRegI_
 %}
 instruct vstring_compareL(iRegP_R11 str1, iRegI_R12 cnt1, iRegP_R13 str2, iRegI_R14 cnt2,
                           iRegI_R10 result, vReg_V2 v2, vReg_V3 v3, vReg_V4 v4, vReg_V5 v5,
+                          vReg_V6 v6, vReg_V7 v7, vReg_V12 v12, vReg_V13 v13, vReg_V14 v14, vReg_V15 v15,
                           iRegP_R28 tmp1, iRegL_R29 tmp2)
 %{
   predicate(UseRVV && ((StrCompNode *)n)->encoding() == StrIntrinsicNode::LL);
   match(Set result (StrComp (Binary str1 cnt1) (Binary str2 cnt2)));
   effect(KILL tmp1, KILL tmp2, USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2,
-         TEMP v2, TEMP v3, TEMP v4, TEMP v5);
+         TEMP v2, TEMP v3, TEMP v4, TEMP v5, TEMP v6, TEMP v7, TEMP v12, TEMP v13, TEMP v14, TEMP v15);
 
   format %{ "String Compare $str1, $cnt1, $str2, $cnt2 -> $result\t#@string_compareL" %}
   ins_encode %{
@@ -2758,13 +2760,13 @@ instruct vstring_compareL(iRegP_R11 str1, iRegI_R12 cnt1, iRegP_R13 str2, iRegI_
 
 instruct vstring_compareUL(iRegP_R11 str1, iRegI_R12 cnt1, iRegP_R13 str2, iRegI_R14 cnt2,
                            iRegI_R10 result, vReg_V4 v4, vReg_V5 v5, vReg_V6 v6, vReg_V7 v7,
-                           vReg_V8 v8, vReg_V9 v9, vReg_V10 v10, vReg_V11 v11,
+                           vReg_V8 v8, vReg_V9 v9, vReg_V10 v10, vReg_V11 v11, vReg_V12 v12, vReg_V13 v13, vReg_V14 v14, vReg_V15 v15,
                            iRegP_R28 tmp1, iRegL_R29 tmp2)
 %{
   predicate(UseRVV && ((StrCompNode *)n)->encoding() == StrIntrinsicNode::UL);
   match(Set result (StrComp (Binary str1 cnt1) (Binary str2 cnt2)));
   effect(KILL tmp1, KILL tmp2, USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2,
-         TEMP v4, TEMP v5, TEMP v6, TEMP v7, TEMP v8, TEMP v9, TEMP v10, TEMP v11);
+         TEMP v4, TEMP v5, TEMP v6, TEMP v7, TEMP v8, TEMP v9, TEMP v10, TEMP v11, TEMP v12, TEMP v13, TEMP v14, TEMP v15);
 
   format %{"String Compare $str1, $cnt1, $str2, $cnt2 -> $result\t#@string_compareUL" %}
   ins_encode %{
@@ -2777,13 +2779,13 @@ instruct vstring_compareUL(iRegP_R11 str1, iRegI_R12 cnt1, iRegP_R13 str2, iRegI
 %}
 instruct vstring_compareLU(iRegP_R11 str1, iRegI_R12 cnt1, iRegP_R13 str2, iRegI_R14 cnt2,
                            iRegI_R10 result, vReg_V4 v4, vReg_V5 v5, vReg_V6 v6, vReg_V7 v7,
-                           vReg_V8 v8, vReg_V9 v9, vReg_V10 v10, vReg_V11 v11,
+                           vReg_V8 v8, vReg_V9 v9, vReg_V10 v10, vReg_V11 v11, vReg_V12 v12, vReg_V13 v13, vReg_V14 v14, vReg_V15 v15,
                            iRegP_R28 tmp1, iRegL_R29 tmp2)
 %{
   predicate(UseRVV && ((StrCompNode *)n)->encoding() == StrIntrinsicNode::LU);
   match(Set result (StrComp (Binary str1 cnt1) (Binary str2 cnt2)));
   effect(KILL tmp1, KILL tmp2, USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2,
-         TEMP v4, TEMP v5, TEMP v6, TEMP v7, TEMP v8, TEMP v9, TEMP v10, TEMP v11);
+         TEMP v4, TEMP v5, TEMP v6, TEMP v7, TEMP v8, TEMP v9, TEMP v10, TEMP v11, TEMP v12, TEMP v13, TEMP v14, TEMP v15);
 
   format %{ "String Compare $str1, $cnt1, $str2, $cnt2 -> $result\t#@string_compareLU" %}
   ins_encode %{
@@ -2797,11 +2799,11 @@ instruct vstring_compareLU(iRegP_R11 str1, iRegI_R12 cnt1, iRegP_R13 str2, iRegI
 
 // fast byte[] to char[] inflation
 instruct vstring_inflate(Universe dummy, iRegP_R10 src, iRegP_R11 dst, iRegI_R12 len,
-                         vReg_V4 v4, vReg_V5 v5, vReg_V6 v6, vReg_V7 v7, iRegLNoSp tmp)
+                         vReg_V4 v4, vReg_V5 v5, vReg_V6 v6, vReg_V7 v7, vReg_V8 v8, vReg_V9 v9, iRegLNoSp tmp)
 %{
   predicate(UseRVV);
   match(Set dummy (StrInflatedCopy src (Binary dst len)));
-  effect(TEMP v4, TEMP v5, TEMP v6, TEMP v7, TEMP tmp, USE_KILL src, USE_KILL dst, USE_KILL len);
+  effect(TEMP v4, TEMP v5, TEMP v6, TEMP v7, TEMP v8, TEMP v9, TEMP tmp, USE_KILL src, USE_KILL dst, USE_KILL len);
 
   format %{ "String Inflate $src,$dst" %}
   ins_encode %{
@@ -2861,11 +2863,12 @@ instruct vstring_compress(iRegP_R12 src, iRegP_R11 dst, iRegI_R13 len, iRegI_R10
 %}
 
 instruct vcount_positives(iRegP_R11 ary, iRegI_R12 len, iRegI_R10 result,
-                          vReg_V4 v4, vReg_V5 v5, vReg_V6 v6, vReg_V7 v7, iRegLNoSp tmp)
+                          vReg_V4 v4, vReg_V5 v5, vReg_V6 v6, vReg_V7 v7,
+                          vReg_V4 v8, vReg_V5 v9, vReg_V6 v10, vReg_V7 v11, iRegLNoSp tmp)
 %{
   predicate(UseRVV);
   match(Set result (CountPositives ary len));
-  effect(TEMP_DEF result, USE_KILL ary, USE_KILL len, TEMP v4, TEMP v5, TEMP v6, TEMP v7, TEMP tmp);
+  effect(TEMP_DEF result, USE_KILL ary, USE_KILL len, TEMP v4, TEMP v5, TEMP v6, TEMP v7, TEMP v8, TEMP v9, TEMP v10, TEMP v11, TEMP tmp);
 
   format %{ "count positives byte[] $ary, $len -> $result" %}
   ins_encode %{
@@ -2877,12 +2880,13 @@ instruct vcount_positives(iRegP_R11 ary, iRegI_R12 len, iRegI_R10 result,
 
 instruct vstringU_indexof_char(iRegP_R11 str1, iRegI_R12 cnt1, iRegI_R13 ch,
                                iRegI_R10 result, iRegINoSp tmp1, iRegINoSp tmp2,
-                               vReg_V4 v4, vReg_V5 v5, vReg_V6 v6, vReg_V7 v7)
+                               vReg_V4 v4, vReg_V5 v5, vReg_V6 v6, vReg_V7 v7,
+                               vReg_V8 v8, vReg_V9 v9, vReg_V10 v10, vReg_V11 v11)
 %{
   predicate(UseRVV && (((StrIndexOfCharNode*)n)->encoding() == StrIntrinsicNode::U));
   match(Set result (StrIndexOfChar (Binary str1 cnt1) ch));
   effect(TEMP_DEF result, USE_KILL str1, USE_KILL cnt1, USE_KILL ch,
-         TEMP tmp1, TEMP tmp2, TEMP v4, TEMP v5, TEMP v6, TEMP v7);
+         TEMP tmp1, TEMP tmp2, TEMP v4, TEMP v5, TEMP v6, TEMP v7, TEMP v8, TEMP v9, TEMP v10, TEMP v11);
 
   format %{ "StringUTF16 IndexOf char[] $str1, $cnt1, $ch -> $result" %}
 
@@ -2897,12 +2901,13 @@ instruct vstringU_indexof_char(iRegP_R11 str1, iRegI_R12 cnt1, iRegI_R13 ch,
 
 instruct vstringL_indexof_char(iRegP_R11 str1, iRegI_R12 cnt1, iRegI_R13 ch,
                                iRegI_R10 result, iRegINoSp tmp1, iRegINoSp tmp2,
-                               vReg_V4 v4, vReg_V5 v5, vReg_V6 v6, vReg_V7 v7)
+                               vReg_V4 v4, vReg_V5 v5, vReg_V6 v6, vReg_V7 v7,
+                               vReg_V8 v8, vReg_V9 v9, vReg_V10 v10, vReg_V11 v11)
 %{
   predicate(UseRVV && (((StrIndexOfCharNode*)n)->encoding() == StrIntrinsicNode::L));
   match(Set result (StrIndexOfChar (Binary str1 cnt1) ch));
   effect(TEMP_DEF result, USE_KILL str1, USE_KILL cnt1, USE_KILL ch,
-         TEMP tmp1, TEMP tmp2, TEMP v4, TEMP v5, TEMP v6, TEMP v7);
+         TEMP tmp1, TEMP tmp2, TEMP v4, TEMP v5, TEMP v6, TEMP v7, TEMP v8, TEMP v9, TEMP v10, TEMP v11);
 
   format %{ "StringLatin1 IndexOf char[] $str1, $cnt1, $ch -> $result" %}
 
@@ -3146,7 +3151,7 @@ instruct vblend(vReg dst, vReg src1, vReg src2, vRegMask_V0 v0) %{
 // ------------------------------ Vector cast ----------------------------------
 
 // VectorCastB2X
-
+/*
 instruct vcvtBtoX(vReg dst, vReg src) %{
   match(Set dst (VectorCastB2X src));
   effect(TEMP_DEF dst);
@@ -3165,9 +3170,9 @@ instruct vcvtBtoX(vReg dst, vReg src) %{
   %}
   ins_pipe(pipe_slow);
 %}
-
+*/
 // VectorCastS2X
-
+/* integer_narrow_v is not supported on 0.7.1 so far
 instruct vcvtStoB(vReg dst, vReg src) %{
   predicate(Matcher::vector_element_basic_type(n) == T_BYTE);
   match(Set dst (VectorCastS2X src));
@@ -3178,7 +3183,8 @@ instruct vcvtStoB(vReg dst, vReg src) %{
   %}
   ins_pipe(pipe_slow);
 %}
-
+*/
+/*
 instruct vcvtStoX_extend(vReg dst, vReg src) %{
   predicate((Matcher::vector_element_basic_type(n) == T_INT ||
              Matcher::vector_element_basic_type(n) == T_LONG));
@@ -3191,7 +3197,8 @@ instruct vcvtStoX_extend(vReg dst, vReg src) %{
   %}
   ins_pipe(pipe_slow);
 %}
-
+*/
+/* lmul mf2 unsupported on 0.7.1
 instruct vcvtStoX_fp_extend(vReg dst, vReg src) %{
   predicate((Matcher::vector_element_basic_type(n) == T_FLOAT ||
              Matcher::vector_element_basic_type(n) == T_DOUBLE));
@@ -3208,9 +3215,9 @@ instruct vcvtStoX_fp_extend(vReg dst, vReg src) %{
   %}
   ins_pipe(pipe_slow);
 %}
-
+*/
 // VectorCastI2X
-
+/* integer_narrow_v is not supported on 0.7.1 so far
 instruct vcvtItoX_narrow(vReg dst, vReg src) %{
   predicate((Matcher::vector_element_basic_type(n) == T_BYTE ||
              Matcher::vector_element_basic_type(n) == T_SHORT));
@@ -3223,7 +3230,8 @@ instruct vcvtItoX_narrow(vReg dst, vReg src) %{
   %}
   ins_pipe(pipe_slow);
 %}
-
+*/
+/*
 instruct vcvtItoL(vReg dst, vReg src) %{
   predicate(Matcher::vector_element_basic_type(n) == T_LONG);
   match(Set dst (VectorCastI2X src));
@@ -3235,7 +3243,7 @@ instruct vcvtItoL(vReg dst, vReg src) %{
   %}
   ins_pipe(pipe_slow);
 %}
-
+*/
 instruct vcvtItoF(vReg dst, vReg src) %{
   predicate(Matcher::vector_element_basic_type(n) == T_FLOAT);
   match(Set dst (VectorCastI2X src));
@@ -3248,6 +3256,7 @@ instruct vcvtItoF(vReg dst, vReg src) %{
   ins_pipe(pipe_slow);
 %}
 
+/* lmul mf2 unsupported on 0.7.1
 instruct vcvtItoD(vReg dst, vReg src) %{
   predicate(Matcher::vector_element_basic_type(n) == T_DOUBLE);
   match(Set dst (VectorCastI2X src));
@@ -3260,9 +3269,9 @@ instruct vcvtItoD(vReg dst, vReg src) %{
   %}
   ins_pipe(pipe_slow);
 %}
-
+*/
 // VectorCastL2X
-
+/* integer_narrow_v is not supported on 0.7.1 so far
 instruct vcvtLtoI(vReg dst, vReg src) %{
   predicate(Matcher::vector_element_basic_type(n) == T_INT ||
             Matcher::vector_element_basic_type(n) == T_BYTE ||
@@ -3276,7 +3285,8 @@ instruct vcvtLtoI(vReg dst, vReg src) %{
   %}
   ins_pipe(pipe_slow);
 %}
-
+*/
+/* lmul mf2 unsupported on 0.7.1
 instruct vcvtLtoF(vReg dst, vReg src) %{
   predicate(Matcher::vector_element_basic_type(n) == T_FLOAT);
   match(Set dst (VectorCastL2X src));
@@ -3288,6 +3298,7 @@ instruct vcvtLtoF(vReg dst, vReg src) %{
   %}
   ins_pipe(pipe_slow);
 %}
+*/
 
 instruct vcvtLtoD(vReg dst, vReg src) %{
   predicate(Matcher::vector_element_basic_type(n) == T_DOUBLE);
@@ -3302,7 +3313,7 @@ instruct vcvtLtoD(vReg dst, vReg src) %{
 %}
 
 // VectorCastF2X
-
+/* vfncvt_rtz_x_f_w_safe is not present in 0.7.1
 instruct vcvtFtoX_narrow(vReg dst, vReg src, vRegMask_V0 v0) %{
   predicate(Matcher::vector_element_basic_type(n) == T_BYTE ||
             Matcher::vector_element_basic_type(n) == T_SHORT);
@@ -3318,7 +3329,8 @@ instruct vcvtFtoX_narrow(vReg dst, vReg src, vRegMask_V0 v0) %{
   %}
   ins_pipe(pipe_slow);
 %}
-
+*/
+/* vfcvt_rtz_x_f_v is not present in 0.7.1
 instruct vcvtFtoI(vReg dst, vReg src, vRegMask_V0 v0) %{
   predicate(Matcher::vector_element_basic_type(n) == T_INT);
   match(Set dst (VectorCastF2X src));
@@ -3330,7 +3342,8 @@ instruct vcvtFtoI(vReg dst, vReg src, vRegMask_V0 v0) %{
   %}
   ins_pipe(pipe_slow);
 %}
-
+*/
+/* vfwcvt_rtz_x_f_v_safe is not present in 0.7.1
 instruct vcvtFtoL(vReg dst, vReg src, vRegMask_V0 v0) %{
   predicate(Matcher::vector_element_basic_type(n) == T_LONG);
   match(Set dst (VectorCastF2X src));
@@ -3345,7 +3358,8 @@ instruct vcvtFtoL(vReg dst, vReg src, vRegMask_V0 v0) %{
   %}
   ins_pipe(pipe_slow);
 %}
-
+*/
+/* lmul mf2 is unsupported in 0.7.1
 instruct vcvtFtoD(vReg dst, vReg src) %{
   predicate(Matcher::vector_element_basic_type(n) == T_DOUBLE);
   match(Set dst (VectorCastF2X src));
@@ -3358,9 +3372,10 @@ instruct vcvtFtoD(vReg dst, vReg src) %{
   %}
   ins_pipe(pipe_slow);
 %}
+*/
 
 // VectorCastD2X
-
+/* vfncvt_rtz_x_f_w_safe is not present in 0.7.1
 instruct vcvtDtoX_narrow(vReg dst, vReg src, vRegMask_V0 v0) %{
   predicate(Matcher::vector_element_basic_type(n) == T_BYTE ||
             Matcher::vector_element_basic_type(n) == T_SHORT ||
@@ -3382,7 +3397,8 @@ instruct vcvtDtoX_narrow(vReg dst, vReg src, vRegMask_V0 v0) %{
   %}
   ins_pipe(pipe_slow);
 %}
-
+*/
+/* vfcvt_rtz_x_f_v isn ot present in 0.7.1
 instruct vcvtDtoL(vReg dst, vReg src, vRegMask_V0 v0) %{
   predicate(Matcher::vector_element_basic_type(n) == T_LONG);
   match(Set dst (VectorCastD2X src));
@@ -3394,7 +3410,9 @@ instruct vcvtDtoL(vReg dst, vReg src, vRegMask_V0 v0) %{
   %}
   ins_pipe(pipe_slow);
 %}
+*/
 
+/* lmul mf2 unsupported on 0.7.1
 instruct vcvtDtoF(vReg dst, vReg src) %{
   predicate(Matcher::vector_element_basic_type(n) == T_FLOAT);
   match(Set dst (VectorCastD2X src));
@@ -3406,7 +3424,7 @@ instruct vcvtDtoF(vReg dst, vReg src) %{
   %}
   ins_pipe(pipe_slow);
 %}
-
+*/
 // ------------------------------ Vector reinterpret ---------------------------
 
 instruct reinterpret(vReg dst_src) %{
@@ -3603,7 +3621,7 @@ instruct vexpand(vReg dst, vReg src, vRegMask_V0 v0, vReg tmp) %{
 %}
 
 // ------------------------------ Vector Load Gather ---------------------------
-
+/* vluxei32_v is unsupported on 0.7.1
 instruct gather_load(vReg dst, indirect mem, vReg idx) %{
   predicate(type2aelembytes(Matcher::vector_element_basic_type(n)) == 4 ||
             type2aelembytes(Matcher::vector_element_basic_type(n)) == 8);
@@ -3611,7 +3629,8 @@ instruct gather_load(vReg dst, indirect mem, vReg idx) %{
   effect(TEMP_DEF dst);
   format %{ "gather_load $dst, $mem, $idx" %}
   ins_encode %{
-    __ vmv1r_v(as_VectorRegister($dst$$reg), as_VectorRegister($idx$$reg));
+    __ vsetvli(t0, x0, Assembler::e8); //as a replacement of vmv1r.v, we need to set lmul to 1
+    __ vmv_v_v(as_VectorRegister($dst$$reg), as_VectorRegister($idx$$reg));
     BasicType bt = Matcher::vector_element_basic_type(this);
     Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
     __ vsetvli_helper(bt, Matcher::vector_length(this));
@@ -3629,7 +3648,8 @@ instruct gather_load_masked(vReg dst, indirect mem, vReg idx, vRegMask_V0 v0, vR
   effect(TEMP_DEF dst, TEMP tmp);
   format %{ "gather_load_masked $dst, $mem, $idx, $v0\t# KILL $tmp" %}
   ins_encode %{
-    __ vmv1r_v(as_VectorRegister($tmp$$reg), as_VectorRegister($idx$$reg));
+    __ vsetvli(t0, x0, Assembler::e8); //as a replacement of vmv1r.v, we need to set lmul to 1
+    __ vmv_v_v(as_VectorRegister($tmp$$reg), as_VectorRegister($idx$$reg));
     BasicType bt = Matcher::vector_element_basic_type(this);
     Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
     __ vsetvli_helper(bt, Matcher::vector_length(this));
@@ -3641,9 +3661,9 @@ instruct gather_load_masked(vReg dst, indirect mem, vReg idx, vRegMask_V0 v0, vR
  %}
   ins_pipe(pipe_slow);
 %}
-
+*/
 // ------------------------------ Vector Store Scatter -------------------------
-
+/* vsuxei32_v is unsupported on 0.7.1
 instruct scatter_store(indirect mem, vReg src, vReg idx, vReg tmp) %{
   predicate(type2aelembytes(Matcher::vector_element_basic_type(n->in(3)->in(1))) == 4 ||
             type2aelembytes(Matcher::vector_element_basic_type(n->in(3)->in(1))) == 8);
@@ -3651,7 +3671,8 @@ instruct scatter_store(indirect mem, vReg src, vReg idx, vReg tmp) %{
   effect(TEMP tmp);
   format %{ "scatter_store $mem, $idx, $src\t# KILL $tmp" %}
   ins_encode %{
-    __ vmv1r_v(as_VectorRegister($tmp$$reg), as_VectorRegister($idx$$reg));
+    __ vsetvli(t0, x0, Assembler::e8); //as a replacement of vmv1r.v, we need to set lmul to 1
+    __ vmv_v_v(as_VectorRegister($tmp$$reg), as_VectorRegister($idx$$reg));
     BasicType bt = Matcher::vector_element_basic_type(this, $src);
     Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
     __ vsetvli_helper(bt, Matcher::vector_length(this, $src));
@@ -3669,7 +3690,8 @@ instruct scatter_store_masked(indirect mem, vReg src, vReg idx, vRegMask_V0 v0, 
   effect(TEMP tmp);
   format %{ "scatter_store_masked $mem, $idx, $src, $v0\t# KILL $tmp" %}
   ins_encode %{
-    __ vmv1r_v(as_VectorRegister($tmp$$reg), as_VectorRegister($idx$$reg));
+    __ vsetvli(t0, x0, Assembler::e8); //as a replacement of vmv1r.v, we need to set lmul to 1
+    __ vmv_v_v(as_VectorRegister($tmp$$reg), as_VectorRegister($idx$$reg));
     BasicType bt = Matcher::vector_element_basic_type(this, $src);
     Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
     __ vsetvli_helper(bt, Matcher::vector_length(this, $src));
@@ -3679,7 +3701,7 @@ instruct scatter_store_masked(indirect mem, vReg src, vReg idx, vRegMask_V0 v0, 
   %}
   ins_pipe(pipe_slow);
 %}
-
+*/
 // ------------------------------ Populate Index to a Vector -------------------
 
 instruct populateindex(vReg dst, iRegIorL2I src1, iRegIorL2I src2, vReg tmp) %{

@@ -118,8 +118,9 @@
   }
 
   void spill(VectorRegister v, int offset) {
+    vsetvli(t0, x0, Assembler::e8, Assembler::m1);
     add(t0, sp, offset);
-    vs1r_v(v, t0);
+    vse8_v(v, t0);
   }
 
   void unspill(Register r, bool is64, int offset) {
@@ -138,8 +139,10 @@
   }
 
   void unspill(VectorRegister v, int offset) {
+    vsetvli(t0, x0, Assembler::e8, Assembler::m1);
+
     add(t0, sp, offset);
-    vl1r_v(v, t0);
+    vle8_v(v, t0);
   }
 
   void spill_copy_vector_stack_to_stack(int src_offset, int dst_offset, int vector_length_in_bytes) {
@@ -240,14 +243,14 @@
     }
   }
 
-  void integer_extend_v(VectorRegister dst, BasicType dst_bt, int vector_length,
-                        VectorRegister src, BasicType src_bt);
+ // void integer_extend_v(VectorRegister dst, BasicType dst_bt, int vector_length,
+ //                       VectorRegister src, BasicType src_bt);
 
-  void integer_narrow_v(VectorRegister dst, BasicType dst_bt, int vector_length,
-                        VectorRegister src, BasicType src_bt);
-
+  //void integer_narrow_v(VectorRegister dst, BasicType dst_bt, int vector_length,
+  //                      VectorRegister src, BasicType src_bt);
+/* unsupported on 0.7.1
   void vfcvt_rtz_x_f_v_safe(VectorRegister dst, VectorRegister src);
-
+*/
   void extract_v(Register dst, VectorRegister src, BasicType bt, int idx, VectorRegister tmp);
   void extract_fp_v(FloatRegister dst, VectorRegister src, BasicType bt, int idx, VectorRegister tmp);
 

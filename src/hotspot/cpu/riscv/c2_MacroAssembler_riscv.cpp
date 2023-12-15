@@ -1594,6 +1594,8 @@ void C2_MacroAssembler::element_compare(Register a1, Register a2, Register resul
   Label loop;
   Assembler::SEW sew = islatin ? Assembler::e8 : Assembler::e16;
 
+  assert_different_registers(vr1, vr2, vrs);
+
   bind(loop);
   vsetvli(tmp1, cnt, sew, Assembler::m2);
   vlex_v(vr1, a1, sew);
@@ -1625,7 +1627,7 @@ void C2_MacroAssembler::string_equals_v(Register a1, Register a2, Register resul
     srli(cnt, cnt, 1);
   }
 
-  element_compare(a1, a2, result, cnt, tmp1, tmp2, v2, v4, v2, elem_size == 1, DONE);
+  element_compare(a1, a2, result, cnt, tmp1, tmp2, v2, v4, v6, elem_size == 1, DONE);
 
   bind(DONE);
   BLOCK_COMMENT("} string_equals_v");
@@ -1678,7 +1680,7 @@ void C2_MacroAssembler::arrays_equals_v(Register a1, Register a2, Register resul
   la(a1, Address(a1, base_offset));
   la(a2, Address(a2, base_offset));
 
-  element_compare(a1, a2, result, cnt1, tmp1, tmp2, v2, v4, v2, elem_size == 1, DONE);
+  element_compare(a1, a2, result, cnt1, tmp1, tmp2, v2, v4, v6, elem_size == 1, DONE);
 
   bind(DONE);
 
@@ -1714,7 +1716,7 @@ void C2_MacroAssembler::string_compare_v(Register str1, Register str2, Register 
   bind(L);
 
   if (str1_isL == str2_isL) { // LL or UU
-    element_compare(str1, str2, zr, cnt2, tmp1, tmp2, v2, v4, v2, encLL, DIFFERENCE);
+    element_compare(str1, str2, zr, cnt2, tmp1, tmp2, v2, v4, v6, encLL, DIFFERENCE);
     j(DONE);
   } else { // LU or UL
     Register strL = encLU ? str1 : str2;
@@ -1725,11 +1727,12 @@ void C2_MacroAssembler::string_compare_v(Register str1, Register str2, Register 
     bind(loop);
     vsetvli(tmp1, cnt2, Assembler::e8, Assembler::m2);
     vle8_v(vstr1, strL);
+    vwaddu_vx(vstr2, vstr1, x0); //will operate on vstr2 as if lmul is m4 and sew is e16 already
     vsetvli(tmp1, cnt2, Assembler::e16, Assembler::m4);
-    vzext_vf2(vstr2, vstr1);
+//    vzext_vf2(vstr2, vstr1);
     vle16_v(vstr1, strU);
-    vmsne_vv(v4, vstr2, vstr1);
-    vfirst_m(tmp2, v4);
+    vmsne_vv(v12, vstr2, vstr1);
+    vfirst_m(tmp2, v12);
     bgez(tmp2, DIFFERENCE);
     sub(cnt2, cnt2, tmp1);
     add(strL, strL, tmp1);
@@ -1756,9 +1759,10 @@ void C2_MacroAssembler::byte_array_inflate_v(Register src, Register dst, Registe
   BLOCK_COMMENT("byte_array_inflate_v {");
   bind(loop);
   vsetvli(tmp, len, Assembler::e8, Assembler::m2);
-  vle8_v(v6, src);
+  vle8_v(v8, src);
+  vwaddu_vx(v4, v8, x0); //will operate on v4 as if lmul is m4 already and sew is e16 already
   vsetvli(t0, len, Assembler::e16, Assembler::m4);
-  vzext_vf2(v4, v6);
+//  vzext_vf2(v4, v6);
   vse16_v(v4, dst);
   sub(len, len, tmp);
   add(src, src, tmp);
@@ -1837,8 +1841,8 @@ void C2_MacroAssembler::count_positives_v(Register ary, Register len, Register r
   bind(LOOP);
   vsetvli(t0, len, Assembler::e8, Assembler::m4);
   vle8_v(v4, ary);
-  vmslt_vx(v4, v4, zr);
-  vfirst_m(tmp, v4);
+  vmslt_vx(v8, v4, zr);
+  vfirst_m(tmp, v8);
   bgez(tmp, SET_RESULT);
   // if tmp == -1, all bytes are positive
   add(result, result, t0);
@@ -1867,8 +1871,8 @@ void C2_MacroAssembler::string_indexof_char_v(Register str1, Register cnt1,
   bind(loop);
   vsetvli(tmp1, cnt1, sew, Assembler::m4);
   vlex_v(v4, str1, sew);
-  vmseq_vx(v4, v4, ch);
-  vfirst_m(tmp2, v4);
+  vmseq_vx(v8, v4, ch);
+  vfirst_m(tmp2, v8);
   bgez(tmp2, MATCH); // if equal, return index
 
   add(result, result, tmp1);
@@ -2010,7 +2014,8 @@ void C2_MacroAssembler::reduce_integral_v(Register dst, Register src1,
 void C2_MacroAssembler::vsetvli_helper(BasicType bt, int vector_length, LMUL vlmul, Register tmp) {
   Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
   if (vector_length <= 31) {
-    vsetivli(tmp, vector_length, sew, vlmul);
+    mv(tmp, vector_length);
+    vsetvli(tmp, tmp, sew, vlmul);
   } else if (vector_length == (MaxVectorSize / type2aelembytes(bt))) {
     vsetvli(tmp, x0, sew, vlmul);
   } else {
@@ -2057,6 +2062,7 @@ void C2_MacroAssembler::compare_fp_v(VectorRegister vd, VectorRegister src1, Vec
   }
 }
 
+/* FIXME: replace with 0.7.1 way
 void C2_MacroAssembler::integer_extend_v(VectorRegister dst, BasicType dst_bt, int vector_length,
                                          VectorRegister src, BasicType src_bt) {
   assert(type2aelembytes(dst_bt) > type2aelembytes(src_bt) && type2aelembytes(dst_bt) <= 8 && type2aelembytes(src_bt) <= 4, "invalid element size");
@@ -2092,9 +2098,10 @@ void C2_MacroAssembler::integer_extend_v(VectorRegister dst, BasicType dst_bt, i
     vsext_vf2(dst, src);
   }
 }
-
+*/
 // Vector narrow from src to dst with specified element sizes.
 // High part of dst vector will be filled with zero.
+/* FIXME: think about the same in 0.7.1 terms, without mf2
 void C2_MacroAssembler::integer_narrow_v(VectorRegister dst, BasicType dst_bt, int vector_length,
                                          VectorRegister src, BasicType src_bt) {
   assert(type2aelembytes(dst_bt) < type2aelembytes(src_bt) && type2aelembytes(dst_bt) <= 4 && type2aelembytes(src_bt) <= 8, "invalid element size");
@@ -2127,7 +2134,8 @@ void C2_MacroAssembler::integer_narrow_v(VectorRegister dst, BasicType dst_bt, i
     vncvt_x_x_w(dst, src);
   }
 }
-
+ */
+/* unsupported on 0.7.1
 #define VFCVT_SAFE(VFLOATCVT)                                                      \
 void C2_MacroAssembler::VFLOATCVT##_safe(VectorRegister dst, VectorRegister src) { \
   assert_different_registers(dst, src);                                            \
@@ -2139,7 +2147,7 @@ void C2_MacroAssembler::VFLOATCVT##_safe(VectorRegister dst, VectorRegister src)
 VFCVT_SAFE(vfcvt_rtz_x_f_v);
 
 #undef VFCVT_SAFE
-
+*/
 // Extract a scalar element from an vector at position 'idx'.
 // The input elements in src are expected to be of integral type.
 void C2_MacroAssembler::extract_v(Register dst, VectorRegister src, BasicType bt,

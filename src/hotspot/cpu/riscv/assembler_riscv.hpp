@@ -1105,15 +1105,13 @@ enum SEW {
 };
 
 enum LMUL {
-  mf8 = 0b101,
-  mf4 = 0b110,
-  mf2 = 0b111,
-  m1  = 0b000,
-  m2  = 0b001,
-  m4  = 0b010,
-  m8  = 0b011,
+  m1  = 0b00,
+  m2  = 0b01,
+  m4  = 0b10,
+  m8  = 0b11,
 };
 
+  //these two are not present in 0.7.1, instead ediv is there
 enum VMA {
   mu, // undisturbed
   ma, // agnostic
@@ -1138,10 +1136,10 @@ static Assembler::SEW elemtype_to_sew(BasicType etype) {
       guarantee((vlmul | vsew | vta | vma == 0),             \
                 "the other bits in vtype shall be zero");    \
     }                                                        \
-    patch((address)&insn, lsb + 2, lsb, vlmul);              \
-    patch((address)&insn, lsb + 5, lsb + 3, vsew);           \
-    patch((address)&insn, lsb + 6, vta);                     \
-    patch((address)&insn, lsb + 7, vma);                     \
+    patch((address)&insn, lsb + 1, lsb, vlmul);              \
+    patch((address)&insn, lsb + 4, lsb + 2, vsew);           \
+    patch((address)&insn, lsb + 5, 0);                       \
+    patch((address)&insn, lsb + 6, 0);                       \
     patch((address)&insn, hsb - 1, lsb + 8, 0);              \
     patch((address)&insn, hsb, vill)
 
@@ -1159,24 +1157,6 @@ static Assembler::SEW elemtype_to_sew(BasicType etype) {
   }
 
   INSN(vsetvli, 0b1010111, 0b111);
-
-#undef INSN
-
-#define INSN(NAME, op, funct3)                                            \
-  void NAME(Register Rd, uint32_t imm, SEW sew, LMUL lmul = m1,           \
-            VMA vma = mu, VTA vta = tu, bool vill = false) {              \
-    unsigned insn = 0;                                                    \
-    guarantee(is_uimm5(imm), "imm is invalid");                           \
-    patch((address)&insn, 6, 0, op);                                      \
-    patch((address)&insn, 14, 12, funct3);                                \
-    patch((address)&insn, 19, 15, imm);                                   \
-    patch_vtype(29, 20, lmul, sew, vta, vma, vill);                       \
-    patch((address)&insn, 31, 30, 0b11);                                  \
-    patch_reg((address)&insn, 7, Rd);                                     \
-    emit(insn);                                                           \
-  }
-
-  INSN(vsetivli, 0b1010111, 0b111);
 
 #undef INSN
 
@@ -1221,9 +1201,9 @@ enum VectorMask {
     patch_VArith(op, Rd, funct3, Vs1, Vs2, vm, funct6);                        \
   }
 
-  // Vector Mask
-  INSN(vcpop_m,  0b1010111, 0b010, 0b10000, 0b010000);
-  INSN(vfirst_m, 0b1010111, 0b010, 0b10001, 0b010000);
+  // Vector Mask, unsure about functs
+  INSN(vcpop_m,  0b1010111, 0b010, 0b00000, 0b010100); //different funct6, vs1 should be 0
+  INSN(vfirst_m, 0b1010111, 0b010, 0b00000, 0b010101); //different funct6, vs1 should be 0
 #undef INSN
 
 #define INSN(NAME, op, funct3, Vs1, funct6)                                    \
@@ -1232,50 +1212,36 @@ enum VectorMask {
   }
 
   // Vector Integer Extension
-  INSN(vzext_vf2, 0b1010111, 0b010, 0b00110, 0b010010);
-  INSN(vzext_vf4, 0b1010111, 0b010, 0b00100, 0b010010);
-  INSN(vzext_vf8, 0b1010111, 0b010, 0b00010, 0b010010);
-  INSN(vsext_vf2, 0b1010111, 0b010, 0b00111, 0b010010);
-  INSN(vsext_vf4, 0b1010111, 0b010, 0b00101, 0b010010);
-  INSN(vsext_vf8, 0b1010111, 0b010, 0b00011, 0b010010);
-
+//  INSN(vzext_vf2, 0b1010111, 0b010, 0b00110, 0b010010);  //replacing with vwaddu.vx vd, vs2, x0
+ // INSN(vzext_vf4, 0b1010111, 0b010, 0b00100, 0b010010);
+//  INSN(vzext_vf8, 0b1010111, 0b010, 0b00010, 0b010010);
+//  INSN(vsext_vf2, 0b1010111, 0b010, 0b00111, 0b010010);  //replacing with vwadd.vx vd, vs2, x0
+//  INSN(vsext_vf4, 0b1010111, 0b010, 0b00101, 0b010010);
+//  INSN(vsext_vf8, 0b1010111, 0b010, 0b00011, 0b010010);
+  
   // Vector Mask
-  INSN(vmsbf_m,   0b1010111, 0b010, 0b00001, 0b010100);
-  INSN(vmsif_m,   0b1010111, 0b010, 0b00011, 0b010100);
-  INSN(vmsof_m,   0b1010111, 0b010, 0b00010, 0b010100);
-  INSN(viota_m,   0b1010111, 0b010, 0b10000, 0b010100);
+  INSN(vmsbf_m,   0b1010111, 0b010, 0b00001, 0b010110);
+  INSN(vmsif_m,   0b1010111, 0b010, 0b00011, 0b010110);
+  INSN(vmsof_m,   0b1010111, 0b010, 0b00010, 0b010110);
+  INSN(viota_m,   0b1010111, 0b010, 0b10000, 0b010110);
 
   // Vector Single-Width Floating-Point/Integer Type-Convert Instructions
   INSN(vfcvt_f_x_v,      0b1010111, 0b001, 0b00011, 0b010010);
-  INSN(vfcvt_rtz_x_f_v,  0b1010111, 0b001, 0b00111, 0b010010);
+ // INSN(vfcvt_rtz_x_f_v,  0b1010111, 0b001, 0b00111, 0b010010); //unsupported in 0.7.1
 
   // Vector Widening Floating-Point/Integer Type-Convert Instructions
-  INSN(vfwcvt_f_x_v,      0b1010111, 0b001, 0b01011, 0b010010);
-  INSN(vfwcvt_f_f_v,      0b1010111, 0b001, 0b01100, 0b010010);
-  INSN(vfwcvt_rtz_x_f_v,  0b1010111, 0b001, 0b01111, 0b010010);
+ // INSN(vfwcvt_f_x_v,      0b1010111, 0b001, 0b01011, 0b010010);  //FIXME
+  //INSN(vfwcvt_f_f_v,      0b1010111, 0b001, 0b01100, 0b010010);  //FIXME
+  //INSN(vfwcvt_rtz_x_f_v,  0b1010111, 0b001, 0b01111, 0b010010);  //unsupported in 0.7.1
 
   // Vector Narrowing Floating-Point/Integer Type-Convert Instructions
-  INSN(vfncvt_f_x_w,      0b1010111, 0b001, 0b10011, 0b010010);
-  INSN(vfncvt_f_f_w,      0b1010111, 0b001, 0b10100, 0b010010);
-  INSN(vfncvt_rtz_x_f_w,  0b1010111, 0b001, 0b10111, 0b010010);
+//  INSN(vfncvt_f_x_w,      0b1010111, 0b001, 0b10011, 0b010010);  //FIXME
+//  INSN(vfncvt_f_f_w,      0b1010111, 0b001, 0b10100, 0b010010);  //FIXME
+//  INSN(vfncvt_rtz_x_f_w,  0b1010111, 0b001, 0b10111, 0b010010);  //unsupported in 0.7.1
 
   // Vector Floating-Point Instruction
   INSN(vfsqrt_v,  0b1010111, 0b001, 0b00000, 0b010011);
   INSN(vfclass_v, 0b1010111, 0b001, 0b10000, 0b010011);
-
-#undef INSN
-
-// r2rd
-#define INSN(NAME, op, funct3, simm5, vm, funct6)         \
-  void NAME(VectorRegister Vd, VectorRegister Vs2) {      \
-    patch_VArith(op, Vd, funct3, simm5, Vs2, vm, funct6); \
-  }
-
-  // Vector Whole Vector Register Move
-  INSN(vmv1r_v, 0b1010111, 0b011, 0b00000, 0b1, 0b100111);
-  INSN(vmv2r_v, 0b1010111, 0b011, 0b00001, 0b1, 0b100111);
-  INSN(vmv4r_v, 0b1010111, 0b011, 0b00011, 0b1, 0b100111);
-  INSN(vmv8r_v, 0b1010111, 0b011, 0b00111, 0b1, 0b100111);
 
 #undef INSN
 
@@ -1285,7 +1251,7 @@ enum VectorMask {
   }
 
   // Vector Floating-Point Move Instruction
-  INSN(vfmv_f_s, 0b1010111, 0b001, 0b00000, 0b1, 0b010000);
+  INSN(vfmv_f_s, 0b1010111, 0b001, 0b00000, 0b1, 0b010000); //likely the same, test
 
 #undef INSN
 
@@ -1295,7 +1261,7 @@ enum VectorMask {
   }
 
   // Vector Integer Scalar Move Instructions
-  INSN(vmv_x_s, 0b1010111, 0b010, 0b00000, 0b1, 0b010000);
+  INSN(vmv_x_s, 0b1010111, 0b010, 0b00000, 0b1, 0b001100); //in fact vext.x.v with vs1(rs1) is 0, test
 
 #undef INSN
 
@@ -1512,6 +1478,11 @@ enum VectorMask {
   INSN(vsub_vx,  0b1010111, 0b100, 0b000010);
   INSN(vadd_vx,  0b1010111, 0b100, 0b000000);
   INSN(vrsub_vx, 0b1010111, 0b100, 0b000011);
+  
+  // Vector Widening move, vd = vs1 + x0, zero-extend and sign-extend resp
+  //proper funct3 value is from thead tool's gcc
+  INSN(vwaddu_vx, 0b1010111, 0b110, 0b110000)
+  INSN(vwadd_vx,  0b1010111, 0b110, 0b110001)
 
   // Vector Slide Instructions
   INSN(vslidedown_vx, 0b1010111, 0b100, 0b001111);
@@ -1638,8 +1609,8 @@ enum VectorMask {
   }
 
   // Floating-Point Scalar Move Instructions
-  INSN(vfmv_s_f, 0b1010111, 0b101, v0, 0b1, 0b010000);
-  // Vector Floating-Point Move Instruction
+  INSN(vfmv_s_f, 0b1010111, 0b101, v0, 0b1, 0b001100);
+  // Vector Floating-Point Move Instruction, likely the same, test
   INSN(vfmv_v_f, 0b1010111, 0b101, v0, 0b1, 0b010111);
 
 #undef INSN
@@ -1659,8 +1630,8 @@ enum VectorMask {
     patch_VArith(op, Vd, funct3, Rs1->raw_encoding(), Vs2, vm, funct6);     \
    }
 
-  // Integer Scalar Move Instructions
-  INSN(vmv_s_x, 0b1010111, 0b110, v0, 0b1, 0b010000);
+  // Integer Scalar Move Instructions, changed, test
+  INSN(vmv_s_x, 0b1010111, 0b110, v0, 0b1, 0b010101);
 
   // Vector Integer Move Instructions
   INSN(vmv_v_x, 0b1010111, 0b100, v0, 0b1, 0b010111);
@@ -1680,7 +1651,7 @@ enum VectorMask {
   }
 
   // Vector Element Index Instruction
-  INSN(vid_v, 0b1010111, 0b0000010001010, 0b010100);
+  INSN(vid_v, 0b1010111, 0b0000010001010, 0b010110); //VMUNARY0 got changed
 
 #undef INSN
 
@@ -1695,99 +1666,104 @@ enum Nf {
   g8 = 0b111
 };
 
-#define patch_VLdSt(op, VReg, width, Rs1, Reg_or_umop, vm, mop, mew, nf) \
+//0.7.1 vs 1.0 - mop is 3 bits in 0.7.1, mew is absent in 0.7.1
+
+#define patch_VLdSt(op, VReg, width, Rs1, Reg_or_umop, vm, mop, nf) \
     unsigned insn = 0;                                                   \
     patch((address)&insn, 6, 0, op);                                     \
     patch((address)&insn, 14, 12, width);                                \
     patch((address)&insn, 24, 20, Reg_or_umop);                          \
     patch((address)&insn, 25, vm);                                       \
-    patch((address)&insn, 27, 26, mop);                                  \
-    patch((address)&insn, 28, mew);                                      \
+    patch((address)&insn, 28, 26, mop);                                  \
     patch((address)&insn, 31, 29, nf);                                   \
     patch_reg((address)&insn, 7, VReg);                                  \
     patch_reg((address)&insn, 15, Rs1);                                  \
     emit(insn)
 
 #define INSN(NAME, op, lumop, vm, mop, nf)                                           \
-  void NAME(VectorRegister Vd, Register Rs1, uint32_t width = 0, bool mew = false) { \
+  void NAME(VectorRegister Vd, Register Rs1, uint32_t width = 0,                 ) { \
     guarantee(is_uimm3(width), "width is invalid");                                  \
     patch_VLdSt(op, Vd, width, Rs1, lumop, vm, mop, mew, nf);                        \
   }
 
   // Vector Load/Store Instructions
-  INSN(vl1re8_v, 0b0000111, 0b01000, 0b1, 0b00, g1);
+//  INSN(vl1re8_v, 0b0000111, 0b01000, 0b1, 0b00, g1);  //not present
 
 #undef INSN
 
-#define INSN(NAME, op, width, sumop, vm, mop, mew, nf)           \
+#define INSN(NAME, op, width, sumop, vm, mop, nf)                \
   void NAME(VectorRegister Vs3, Register Rs1) {                  \
-    patch_VLdSt(op, Vs3, width, Rs1, sumop, vm, mop, mew, nf);   \
+    patch_VLdSt(op, Vs3, width, Rs1, sumop, vm, mop, nf);        \
   }
 
   // Vector Load/Store Instructions
-  INSN(vs1r_v, 0b0100111, 0b000, 0b01000, 0b1, 0b00, 0b0, g1);
+//  INSN(vs1r_v, 0b0100111, 0b000, 0b01000, 0b1, 0b00, 0b0, g1);  //not present
 
 #undef INSN
 
 // r2_nfvm
-#define INSN(NAME, op, width, umop, mop, mew)                         \
+#define INSN(NAME, op, width, umop, mop)                         \
   void NAME(VectorRegister Vd_or_Vs3, Register Rs1, Nf nf = g1) {     \
-    patch_VLdSt(op, Vd_or_Vs3, width, Rs1, umop, 1, mop, mew, nf);    \
+    patch_VLdSt(op, Vd_or_Vs3, width, Rs1, umop, 1, mop, nf);    \
   }
 
-  // Vector Unit-Stride Instructions
-  INSN(vlm_v, 0b0000111, 0b000, 0b01011, 0b00, 0b0);
-  INSN(vsm_v, 0b0100111, 0b000, 0b01011, 0b00, 0b0);
+  // Vector Unit-Stride Instructions, wtf are these? not used anyway
+//  INSN(vlm_v, 0b0000111, 0b000, 0b01011, 0b00, 0b0);
+//  INSN(vsm_v, 0b0100111, 0b000, 0b01011, 0b00, 0b0);
 
 #undef INSN
 
-#define INSN(NAME, op, width, umop, mop, mew)                                               \
+#define INSN(NAME, op, width, umop, mop)                                               \
   void NAME(VectorRegister Vd_or_Vs3, Register Rs1, VectorMask vm = unmasked, Nf nf = g1) { \
-    patch_VLdSt(op, Vd_or_Vs3, width, Rs1, umop, vm, mop, mew, nf);                         \
+    patch_VLdSt(op, Vd_or_Vs3, width, Rs1, umop, vm, mop, nf);                         \
   }
-
+  // in rvv 0.7.1, vle8_v  == vlbu.v
+  //vle16.v == vlhu.v
+  //vle32.v == vlwu.v
+  // vle64.v == vle.v
+  //same for vse - vsb.v, csh.v, vsw.v, vse.v
   // Vector Unit-Stride Instructions
-  INSN(vle8_v,    0b0000111, 0b000, 0b00000, 0b00, 0b0);
-  INSN(vle16_v,   0b0000111, 0b101, 0b00000, 0b00, 0b0);
-  INSN(vle32_v,   0b0000111, 0b110, 0b00000, 0b00, 0b0);
-  INSN(vle64_v,   0b0000111, 0b111, 0b00000, 0b00, 0b0);
+  INSN(vle8_v,    0b0000111, 0b000, 0b00000, 0b000);
+  INSN(vle16_v,   0b0000111, 0b101, 0b00000, 0b000);
+  INSN(vle32_v,   0b0000111, 0b110, 0b00000, 0b000);
+  INSN(vle64_v,   0b0000111, 0b111, 0b00000, 0b000);
 
   // Vector unit-stride fault-only-first Instructions
-  INSN(vle8ff_v,  0b0000111, 0b000, 0b10000, 0b00, 0b0);
-  INSN(vle16ff_v, 0b0000111, 0b101, 0b10000, 0b00, 0b0);
-  INSN(vle32ff_v, 0b0000111, 0b110, 0b10000, 0b00, 0b0);
-  INSN(vle64ff_v, 0b0000111, 0b111, 0b10000, 0b00, 0b0);
+  INSN(vle8ff_v,  0b0000111, 0b000, 0b10000, 0b000);
+  INSN(vle16ff_v, 0b0000111, 0b101, 0b10000, 0b000);
+  INSN(vle32ff_v, 0b0000111, 0b110, 0b10000, 0b000);
+  INSN(vle64ff_v, 0b0000111, 0b111, 0b10000, 0b000);
 
-  INSN(vse8_v,  0b0100111, 0b000, 0b00000, 0b00, 0b0);
-  INSN(vse16_v, 0b0100111, 0b101, 0b00000, 0b00, 0b0);
-  INSN(vse32_v, 0b0100111, 0b110, 0b00000, 0b00, 0b0);
-  INSN(vse64_v, 0b0100111, 0b111, 0b00000, 0b00, 0b0);
+  INSN(vse8_v,  0b0100111, 0b000, 0b00000, 0b000);
+  INSN(vse16_v, 0b0100111, 0b101, 0b00000, 0b000);
+  INSN(vse32_v, 0b0100111, 0b110, 0b00000, 0b000);
+  INSN(vse64_v, 0b0100111, 0b111, 0b00000, 0b000);
 
 #undef INSN
 
-#define INSN(NAME, op, width, mop, mew)                                                                  \
+#define INSN(NAME, op, width, mop)                                                                  \
   void NAME(VectorRegister Vd, Register Rs1, VectorRegister Vs2, VectorMask vm = unmasked, Nf nf = g1) { \
-    patch_VLdSt(op, Vd, width, Rs1, Vs2->raw_encoding(), vm, mop, mew, nf);                              \
+    patch_VLdSt(op, Vd, width, Rs1, Vs2->raw_encoding(), vm, mop, nf);                              \
   }
-
+  //not present in rvv  071 and not used anyway
   // Vector unordered indexed load instructions
-  INSN(vluxei32_v, 0b0000111, 0b110, 0b01, 0b0);
+//  INSN(vluxei32_v, 0b0000111, 0b110, 0b01, 0b0);
 
   // Vector unordered indexed store instructions
-  INSN(vsuxei32_v, 0b0100111, 0b110, 0b01, 0b0);
+//  INSN(vsuxei32_v, 0b0100111, 0b110, 0b01, 0b0);
 
 #undef INSN
 
-#define INSN(NAME, op, width, mop, mew)                                                                  \
+#define INSN(NAME, op, width, mop)                                                                  \
   void NAME(VectorRegister Vd, Register Rs1, Register Rs2, VectorMask vm = unmasked, Nf nf = g1) {       \
-    patch_VLdSt(op, Vd, width, Rs1, Rs2->raw_encoding(), vm, mop, mew, nf);                              \
+    patch_VLdSt(op, Vd, width, Rs1, Rs2->raw_encoding(), vm, mop, nf);                              \
   }
 
   // Vector Strided Instructions
-  INSN(vlse8_v,  0b0000111, 0b000, 0b10, 0b0);
-  INSN(vlse16_v, 0b0000111, 0b101, 0b10, 0b0);
-  INSN(vlse32_v, 0b0000111, 0b110, 0b10, 0b0);
-  INSN(vlse64_v, 0b0000111, 0b111, 0b10, 0b0);
+  INSN(vlse8_v,  0b0000111, 0b000, 0b010);
+  INSN(vlse16_v, 0b0000111, 0b101, 0b010);
+  INSN(vlse32_v, 0b0000111, 0b110, 0b010);
+  INSN(vlse64_v, 0b0000111, 0b111, 0b010);
 
 #undef INSN
 #undef patch_VLdSt

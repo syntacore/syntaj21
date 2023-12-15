@@ -84,7 +84,7 @@
 
 uint32_t VM_Version::cpu_vector_length() {
   assert(ext_V.enabled(), "should not call this");
-  return (uint32_t)read_csr(CSR_VLENB);
+  return (uint32_t)16;
 }
 
 void VM_Version::setup_cpu_available_features() {
@@ -148,7 +148,7 @@ void VM_Version::setup_cpu_available_features() {
 }
 
 void VM_Version::os_aux_features() {
-  uint64_t auxv = getauxval(AT_HWCAP);
+  uint64_t auxv = getauxval(AT_HWCAP) | HWCAP_ISA_V;
   for (int i = 0; _feature_list[i] != nullptr; i++) {
     if (_feature_list[i]->feature_bit() == HWCAP_ISA_V) {
       // Special case for V: some dev boards only support RVV version 0.7, while
@@ -159,7 +159,7 @@ void VM_Version::os_aux_features() {
       // (ex: Sipeed LicheePi), leading to a SIGILL.
       // That is an acceptable workaround as only Linux Kernel v6.5+ supports V,
       // and that version already support hwprobe anyway
-      continue;
+      //continue;
     }
     if ((_feature_list[i]->feature_bit() & auxv) != 0) {
       _feature_list[i]->enable_feature();
