@@ -1483,6 +1483,8 @@ enum VectorMask {
   //proper funct3 value is from thead tool's gcc
   INSN(vwaddu_vx, 0b1010111, 0b110, 0b110000)
   INSN(vwadd_vx,  0b1010111, 0b110, 0b110001)
+  INSN(vwaddu_wx, 0b1010111, 0b110, 0b110100)
+  INSN(vwadd_wx,  0b1010111, 0b110, 0b110101)
 
   // Vector Slide Instructions
   INSN(vslidedown_vx, 0b1010111, 0b100, 0b001111);
@@ -1630,8 +1632,8 @@ enum VectorMask {
     patch_VArith(op, Vd, funct3, Rs1->raw_encoding(), Vs2, vm, funct6);     \
    }
 
-  // Integer Scalar Move Instructions, changed, test
-  INSN(vmv_s_x, 0b1010111, 0b110, v0, 0b1, 0b010101);
+  // Integer Scalar Move Instructions, changed, tested
+  INSN(vmv_s_x, 0b1010111, 0b110, v0, 0b1, 0b001101);
 
   // Vector Integer Move Instructions
   INSN(vmv_v_x, 0b1010111, 0b100, v0, 0b1, 0b010111);
